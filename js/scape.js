@@ -579,28 +579,59 @@
     }
 
     // ---- water surface and floating plants ----
+    // Each plant is a clump of little rosettes sitting on the water, leaves
+    // cupped upward, with roots trailing below. Shrimp hang upside-down from
+    // the underside of the clump and cling to the longer roots.
+    const hang = []; // undersides to hang from: { x0, x1, y }
     {
       const sc = col('#a8e2ea');
       for (let x = 0; x < w; x++) if (!solid[WT * w + x]) put(x, WT, sc);
+      // one rosette, five pixels wide: rows from the leaf tips down to the waterline
+      const ROSETTE = ['..0..', '.010.', '12021', '32223'], WEED = ['.....', '.1.0.', '12121', '32223'];
       for (const f of L.floaters) {
         if (G < f.born) continue;
-        const cx = R(f.x * w), grow = clamp((G - f.born + 1) / 6, 0, 1);
-        for (let dx = -3; dx <= 3; dx++) {
-          if (Math.abs(dx) < 3) putF(cx + dx, WT - 1, dx === 0 ? P.leaf[1] : P.leaf[0]);
-          putF(cx + dx, WT, Math.abs(dx) === 3 ? P.leaf[2] : P.leaf[1]);
-        }
-        for (let s = -1; s <= 1; s++) {
-          const len = R((5 + hash2(cx, s, 3) * 9) * grow);
-          let x = cx + s * 2;
-          for (let k = 1; k <= len; k++) {
-            if (hash2(x, k, cx) < 0.25) x += hash2(k, x, 8) < 0.5 ? -1 : 1;
-            if (inb(x, WT + k) && !solid[(WT + k) * w + x]) put(x, WT + k, k > len * 0.6 ? P.root[1] : P.root[0]);
+        const cx = R(f.x * w), grow = clamp((G - f.born + 2) / 8, 0, 1);
+        const weed = f.kind === 'weed'; // in the ocean: a drifting clump of seaweed, not leaves
+        const pal = weed ? P.kelp : P.leaf, art = weed ? WEED : ROSETTE;
+        // a clump starts as one rosette and spreads to as many as five
+        const most = 3 + Math.floor(hash2(cx, 1, def.seed) * 3), n = Math.max(1, R(most * (0.3 + 0.7 * grow)));
+        const x0 = clamp(cx - Math.floor((n * 6 - 1) / 2), 2, w - 3 - (n * 6 - 1)), x1 = x0 + n * 6 - 2;
+        for (let r = 0; r < n; r++) {
+          const rx0 = x0 + r * 6, tall = hash2(rx0, 2, cx) < 0.55;
+          for (let row = 0; row < 4; row++) {
+            if (row === 0 && !tall) continue;
+            for (let k = 0; k < 5; k++) if (art[row][k] !== '.') putF(rx0 + k, WT - 3 + row, pal[+art[row][k]]);
           }
+          // roots: a long strand under the middle of each rosette, shorter ones either side
+          for (const k of [1, 2, 3]) {
+            const longest = weed ? 4 + hash2(rx0, k, 3) * 6 : k === 2 ? 12 + hash2(rx0, k, 3) * 14 : 5 + hash2(rx0, k, 3) * 7;
+            const len = R(longest * (0.35 + 0.65 * grow)), run = [];
+            let x = rx0 + k;
+            for (let d = 1; d <= len; d++) {
+              const y = WT + 1 + d;
+              if (hash2(x, d, cx) < 0.2) x += hash2(d, x, 8) < 0.5 ? -1 : 1;
+              if (!inb(x, y) || solid[y * w + x]) break;
+              put(x, y, weed ? (d & 1 ? P.kelp[1] : P.kelp[2]) : d > len * 0.6 ? P.root[1] : P.root[0]);
+              // root hairs
+              if (!weed && d % 4 === 2 && d < len - 1) put(x + (hash2(x, d, 5) < 0.5 ? -1 : 1), y, P.root[1]);
+              run.unshift(x, y); // keep the run in bottom-up order
+            }
+            if (run.length >= 10) climb.push({ pts: run, rich: 0.3 });
+          }
+        }
+        // the underside: one mat of root crowns from end to end
+        for (let x = x0; x <= x1; x++) put(x, WT + 1, x & 1 ? pal[3] : P.root[1]);
+        hang.push({ x0, x1, y: WT + 1 });
+      }
+      // duckweed: specks of green that slowly dot a still surface
+      if (L.duckweed) {
+        for (let x = 1; x < w - 1; x++) {
+          if (!fg[WT * w + x] && hash2(x, 9, def.seed) < 0.08 + 0.2 * (G / 20)) putF(x, WT, P.leaf[0]);
         }
       }
     }
 
-    extractSurfaces(S, climb);
+    extractSurfaces(S, climb, hang);
     return S;
   }
 
@@ -609,8 +640,9 @@
   // it can walk along; to reach another surface it has to swim. The climbing
   // runs are surfaces too, taken head-up or head-down: plant stems wherever
   // nothing solid hides them, roots and coral wherever they stand clear of
-  // the floor.
-  function extractSurfaces(S, climb) {
+  // the floor. And the underside of each floating plant is a surface a shrimp
+  // hangs from, upside-down.
+  function extractSurfaces(S, climb, hang) {
     const w = S.w, h = S.h, solid = S.solid, minY = S.waterTop + 9;
     const done = [];
     let active = [];
@@ -655,6 +687,14 @@
         } else cur = null;
       }
     }
+    for (const u of hang) {
+      const c = { xs: [], ys: [], hang: 1, rich: 0.7 };
+      for (let x = Math.max(5, u.x0); x <= Math.min(w - 6, u.x1); x++) {
+        c.xs.push(x);
+        c.ys.push(u.y);
+      }
+      done.push(c);
+    }
     const keep = done.filter((c) => c.xs.length >= 5);
     let n = 0;
     for (const c of keep) n += c.xs.length;
@@ -666,6 +706,7 @@
     S.cellHash = new Float32Array(n);
     S.cellVert = new Uint8Array(n); // 1 = on something upright, shrimp drawn head-up
     S.cellSide = new Int8Array(n); // on a rock face: -1 open water to the left, 1 to the right
+    S.cellHang = new Uint8Array(n); // 1 = the underside of a floating plant, shrimp drawn upside-down
     // How well biofilm grows here. A thin stem carries less than wood, rock
     // or sand, so the colony spreads over the scape and does not pile onto
     // the plants.
@@ -683,6 +724,7 @@
         S.cellHash[k] = hash2(c.xs[j], c.ys[j], 77);
         S.cellVert[k] = c.vert ? 1 : 0;
         S.cellSide[k] = c.side || 0;
+        S.cellHang[k] = c.hang ? 1 : 0;
         S.cellRich[k] = c.rich;
         S.richSum += c.rich;
       }

@@ -27,15 +27,16 @@
     return {
       sub, subDepth, rockPal: 'rock', woodPal: 'wood', carpetPal: 'leaf', flow: false,
       hills: [], rocks: [], wood: [], roots: [], stems: [], vall: [], carpet: [], moss: 0, anubias: 0,
-      balls: [], floaters: [], corals: [], litter: [], decor: [],
+      balls: [], floaters: [], duckweed: false, corals: [], litter: [], decor: [],
       filter: (w - 12) / w, // the sponge filter sits in the right corner
     };
   }
   // born: the growth step (0..20) at which a thing first shows.
-  function floaters(n, rng, first, last) {
+  // Floating plants, spread along the surface. kind 'weed' is drifting seaweed.
+  function floaters(n, rng, first, last, kind) {
     const out = [];
     for (let i = 0; i < n; i++) {
-      out.push({ x: 0.08 + (0.76 * (i + 0.2 + rng() * 0.6)) / n, born: R(first + ((last - first) * ((i * 3) % n)) / Math.max(1, n - 1)) });
+      out.push({ x: 0.08 + (0.76 * (i + 0.2 + rng() * 0.6)) / n, born: R(first + ((last - first) * ((i * 3) % n)) / Math.max(1, n - 1)), kind });
     }
     return out;
   }
@@ -68,7 +69,7 @@
     L.moss = R(4 + 4 * k);
     L.anubias = R(1 + 2.6 * k);
     L.balls = [{ x: 0.45, r: 4, born: 4 }];
-    L.floaters = floaters(R(2 + 2.2 * k), rng, 9, 19);
+    L.floaters = floaters(R(2 + 2.2 * k), rng, 0, 16);
     return L;
   }
 
@@ -90,6 +91,7 @@
     L.stems = [{ x0: 0.02, x1: 0.12, n: R(2 + k), h: [0.3 * h, 0.5 * h], born: [2, 9], kind: 'green' }];
     L.moss = R(3 + 3 * k);
     L.anubias = R(1 + 1.4 * k);
+    L.floaters = floaters(R(1 + k), rng, 2, 14);
     return L;
   }
 
@@ -121,11 +123,12 @@
     L.carpet = [{ x: 0.5, born: 3, rate: 1.2 + k }]; // seagrass
     const nx = R(1 + 2 * k);
     for (let i = 0; i < nx; i++) L.decor.push({ kind: i % 3 === 2 ? 'star' : 'shell', x: 0.06 + 0.78 * rng() });
+    L.floaters = floaters(R(1 + 1.2 * k), rng, 1, 12, 'weed');
     return L;
   }
 
   // Tall grey stones on sand, with a lawn that slowly covers the floor.
-  function mountain(w, h) {
+  function mountain(w, h, rng) {
     const k = w / 150, L = blank('sand', 13, w), rx = R(8 + 5 * k), ry = R(0.3 * h);
     L.hills = [{ x: 0.36, r: 0.2, h: 5 }, { x: 0.75, r: 0.15, h: 3 }];
     L.rocks = [
@@ -142,7 +145,7 @@
     L.carpet = [{ x: 0.12, born: 1, rate: 2 + k }, { x: 0.52, born: 4, rate: 2.2 + k }, { x: 0.84, born: 7, rate: 2 + k }];
     L.moss = R(2 + 3 * k);
     L.balls = [{ x: 0.08, r: 4, born: 2 }];
-    L.floaters = w >= 150 ? [{ x: 0.7, born: 14 }, { x: 0.25, born: 17 }] : [{ x: 0.6, born: 16 }];
+    L.floaters = floaters(R(1 + 1.2 * k), rng, 3, 15);
     return L;
   }
 
@@ -164,6 +167,7 @@
     L.moss = R(3 + 3 * k);
     L.anubias = R(1 + 2 * k);
     L.floaters = floaters(R(2 + 4 * k), rng, 0, 15);
+    L.duckweed = true;
     return L;
   }
 

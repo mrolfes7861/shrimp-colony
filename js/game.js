@@ -382,6 +382,12 @@
     const egg = kind === 'f' && s.berried > 0;
     const saddle = kind === 'f' && !egg && s.cool <= 0; // a yellow spot behind the head: ready to breed
     const cell = Math.round(s.c);
+    if (!swim && sc.cellHang[cell]) {
+      // hanging under a floating plant: legs up, holding the underside
+      const spr = SC.shrimpSprite(s.v, kind, frame, s.dir > 0 ? 6 : 7, egg, saddle);
+      ctx.drawImage(spr, tx + Math.round(s.x) - (spr.width >> 1), ty + Math.round(s.y) + 1);
+      return;
+    }
     if (!swim && sc.cellVert[cell]) {
       // clinging to a stem, root, coral or rock face: head up or down, legs
       // toward it. On a rock face the body has to be on the open-water side.
@@ -396,7 +402,7 @@
 
   function drawFilm() {
     const sc = colony.scape, film = colony.film, n = sc.n;
-    const X = sc.cellX, Y = sc.cellY, Gi = sc.cellGi, Hh = sc.cellHash, Vt = sc.cellVert;
+    const X = sc.cellX, Y = sc.cellY, Gi = sc.cellGi, Hh = sc.cellHash, Vt = sc.cellVert, Hg = sc.cellHang;
     ctx.fillStyle = C.film1;
     for (let i = 0; i < n; i++) {
       if (film[Gi[i]] > 0.16 + Hh[i] * 0.25) ctx.fillRect(tx + X[i], ty + Y[i], 1, 1);
@@ -406,6 +412,7 @@
       const f = film[Gi[i]], hv = Hh[i];
       if (f <= 0.5 + hv * 0.35) continue;
       if (Vt[i]) ctx.fillRect(tx + X[i] + (hv < 0.5 ? -1 : 1), ty + Y[i], 1, 1);
+      else if (Hg[i]) ctx.fillRect(tx + X[i], ty + Y[i] + 1, 1, 1); // under a floating plant it hangs down
       else {
         ctx.fillRect(tx + X[i], ty + Y[i] - 1, 1, 1);
         if (f > 0.85 && hv < 0.45) ctx.fillRect(tx + X[i], ty + Y[i] - 2, 1, 1);

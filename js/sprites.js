@@ -80,7 +80,8 @@
   }
 
   // pose: 0 right, 1 left, 2 head up legs right, 3 head up legs left,
-  //       4 head down legs right, 5 head down legs left
+  //       4 head down legs right, 5 head down legs left,
+  //       6 right and upside-down, 7 left and upside-down
   const cache = {};
   SC.shrimpSprite = function (v, kind, frame, pose, egg, saddle) {
     egg = egg && kind === 'f';
@@ -91,6 +92,7 @@
     let m = ART[kind][frame];
     if (egg) m = withEggs(m);
     if (pose === 1) m = flipH(m);
+    else if (pose >= 6) m = flipV(pose === 7 ? flipH(m) : m);
     else if (pose >= 2) {
       m = turnUp(m);
       if (pose === 3 || pose === 5) m = flipH(m);

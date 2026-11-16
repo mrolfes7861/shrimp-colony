@@ -13,6 +13,10 @@
   const rnd = Math.random;
   const ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
   const stageOf = (s) => (s.age < K.BABY_T ? 0 : s.age < K.JUV_T ? 1 : 2);
+  // How tall a shrimp is drawn, in pixels. One hanging under a floating plant
+  // has its body below the spot it holds, so swims to and from there aim that
+  // much lower.
+  const bodyH = (s) => (s.age < K.BABY_T ? 3 : s.age < K.JUV_T ? 5 : s.sex === 0 ? 7 : 6);
 
   function growthAt(def, t) {
     const T = K.STAGE_T, tt = t / def.pace;
@@ -108,13 +112,14 @@
     if (s.st === SWIM) {
       s.tc = this.nearest(s.tx, s.ty);
       s.tx = sc.cellX[s.tc];
-      s.ty = sc.cellY[s.tc];
+      s.ty = sc.cellY[s.tc] + (sc.cellHang[s.tc] ? bodyH(s) : 0);
       return;
     }
     const ci = this.nearest(s.x, s.y);
     const dx = sc.cellX[ci] - s.x, dy = sc.cellY[ci] - s.y;
     if (dx * dx + dy * dy <= 8) {
       s.c = s.tc = ci;
+      s.hang = sc.cellHang[ci] === 1;
       s.x = sc.cellX[ci];
       s.y = sc.cellY[ci];
       if (s.st === WALK) { s.st = IDLE; s.tm = 0.5; }
@@ -132,6 +137,7 @@
       x: sc.cellX[ci], y: sc.cellY[ci], dir: rnd() < 0.5 ? -1 : 1,
       st: IDLE, tm: rnd() * 2, c: ci, tc: ci, goal: 0,
       sx: 0, sy: 0, tx: 0, ty: 0, sd: 1, sp: 0, arc: 0,
+      hang: sc.cellHang[ci] === 1, // upside-down under a floating plant
       ph: rnd() * 10, // so they do not all step in time
     };
     this.shrimp.push(s);
@@ -153,10 +159,11 @@
   CP.swimTo = function (s, ci, goal) {
     const sc = this.scape;
     s.sx = s.x;
-    s.sy = s.y;
+    s.sy = s.y + (s.st !== SWIM && s.hang ? bodyH(s) : 0);
+    s.hang = false;
     s.tc = ci;
     s.tx = sc.cellX[ci];
-    s.ty = sc.cellY[ci];
+    s.ty = sc.cellY[ci] + (sc.cellHang[ci] ? bodyH(s) : 0);
     const d = Math.hypot(s.tx - s.sx, s.ty - s.sy);
     s.sd = Math.max(0.5, d / SWIM_SP[stageOf(s)]);
     s.sp = 0;
@@ -273,13 +280,15 @@
         s.c = s.tc;
         s.x = sc.cellX[s.tc];
         s.y = sc.cellY[s.tc];
+        s.hang = sc.cellHang[s.tc] === 1;
         if (s.goal === 1) { s.st = GRAZE; s.tm = 3 + rnd() * 5; }
         else { s.st = IDLE; s.tm = 0.4 + rnd() * 2; }
       } else {
         const p = s.sp, e = p * p * (3 - 2 * p);
         s.x = s.sx + (s.tx - s.sx) * e;
         const y = s.sy + (s.ty - s.sy) * e - Math.sin(Math.PI * p) * s.arc;
-        s.y = Math.max(sc.waterTop + 9, y);
+        // stay under the surface, but no lower than where the swim starts or ends
+        s.y = Math.max(Math.min(sc.waterTop + 9, s.sy, s.ty), y);
       }
     } else if (s.st === WALK) {
       const d = s.tc - s.c, step = WALK_SP[stg] * dt;
