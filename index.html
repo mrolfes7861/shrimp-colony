@@ -7,6 +7,9 @@
 <style>
   html, body { margin: 0; height: 100%; background: #0e0c15; overflow: hidden; }
   body { display: flex; align-items: center; justify-content: center; }
+  /* Inside another page (itch.io) the game sits at the top, so the host's
+     fullscreen button in the bottom corner lands on spare space below it. */
+  html.framed body { align-items: flex-start; }
   canvas {
     display: block;
     image-rendering: crisp-edges;
@@ -18,6 +21,7 @@
 </head>
 <body>
 <canvas id="game" width="320" height="180"></canvas>
+<script>if (window.top !== window.self) document.documentElement.classList.add('framed');</script>
 <script src="js/rng.js"></script>
 <script src="js/data.js"></script>
 <script src="js/themes.js"></script>
