@@ -156,7 +156,7 @@
       P(px + 1, py + 1, 28, 22, '#96704f');
       P(px + 3, py + 3, 24, 18, '#1d2b45');
       P(px + 3, py + 17, 24, 4, '#2c4a5e');
-      g.drawImage(SC.shrimpSprite(0, 'f', 'w0', 0, false), px + 9, py + 11);
+      g.drawImage(SC.shrimpSprite(0, 'f', 'w0', 0, false), px + 8, py + 9);
       // a shelf with books and a plant on the right
       const sx = tx + d.w + 10 + (side >> 1) - 19, sy = 84;
       P(sx, sy, 38, 2, '#96704f');
@@ -354,9 +354,9 @@
       rect(x, y, w, h, picks[i] ? C.panelHi : C.panel);
       box(x, y, w, h, picks[i] ? C.gold : C.line);
       const spr = SC.shrimpSprite(i, 'f', 'w' + (picks[i] ? Math.floor(time * 6) & 1 : 0), 0, false);
-      rect(x + 16, y + 5, 40, 14, '#2f7eab');
-      ctx.drawImage(spr, x + 36 - spr.width, y + 7, spr.width * 2, spr.height * 2);
-      text(V[i].name, x + 36, y + 24, C.ink, 1);
+      rect(x + 14, y + 4, 44, 18, '#2f7eab');
+      ctx.drawImage(spr, x + 36 - spr.width, y + 6, spr.width * 2, spr.height * 2);
+      text(V[i].name, x + 36, y + 25, C.ink, 1);
       if (button(x + 7, y + 37, 15, 15, '-', !picks[i], 'minus')) picks[i]--;
       text(picks[i], x + 36, y + 41, picks[i] ? C.gold : C.dim, 1);
       if (button(x + 50, y + 37, 15, 15, '+', total >= K.MAX_START, 'plus')) picks[i]++;
@@ -377,22 +377,21 @@
     const kind = s.age < K.BABY_T ? 'b' : s.age < K.JUV_T ? 'j' : s.sex === 0 ? 'f' : 'm';
     const swim = s.st === ST.SWIM;
     const beat = Math.floor(time * (swim ? 10 : s.st === ST.WALK ? 8 : 3) + s.ph) & 1;
-    const frame = swim ? 's' + beat : s.st === ST.IDLE ? 'w0' : 'w' + beat;
+    // grazing: a claw goes down to the food and up to the mouth
+    const frame = swim ? 's' + beat : s.st === ST.WALK ? 'w' + beat : s.st === ST.GRAZE ? 'g' + beat : 'w0';
     const egg = kind === 'f' && s.berried > 0;
+    const saddle = kind === 'f' && !egg && s.cool <= 0; // a yellow spot behind the head: ready to breed
     const cell = Math.round(s.c);
     if (!swim && sc.cellVert[cell]) {
       // clinging to a stem, root, coral or rock face: head up or down, legs
       // toward it. On a rock face the body has to be on the open-water side.
       const left = sc.cellSide[cell] ? sc.cellSide[cell] > 0 : s.ph > 5;
-      const spr = SC.shrimpSprite(s.v, kind, frame, (s.dir > 0 ? 2 : 4) + (left ? 1 : 0), egg);
+      const spr = SC.shrimpSprite(s.v, kind, frame, (s.dir > 0 ? 2 : 4) + (left ? 1 : 0), egg, saddle);
       ctx.drawImage(spr, tx + s.x - (left ? 0 : spr.width - 1), ty + Math.round(s.y) - (spr.height >> 1));
       return;
     }
-    const spr = SC.shrimpSprite(s.v, kind, frame, s.dir > 0 ? 0 : 1, egg);
-    let x = tx + Math.round(s.x) - (spr.width >> 1);
-    // a grazing shrimp bobs forward as it picks
-    if (s.st === ST.GRAZE && Math.floor(time * 4 + s.ph) & 1) x += s.dir;
-    ctx.drawImage(spr, x, ty + Math.round(s.y) - spr.height);
+    const spr = SC.shrimpSprite(s.v, kind, frame, s.dir > 0 ? 0 : 1, egg, saddle);
+    ctx.drawImage(spr, tx + Math.round(s.x) - (spr.width >> 1), ty + Math.round(s.y) - spr.height);
   }
 
   function drawFilm() {

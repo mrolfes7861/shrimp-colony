@@ -4,18 +4,20 @@
   'use strict';
   const SC = (root.SC = root.SC || {});
 
-  // B body, D shade, L highlight. The last one, WILD, cannot be picked:
-  // it turns up when two colours breed together.
+  // B body, D shade, L highlight. Some have markings of their own:
+  // M the line along the back, N the head, K the bands between segments.
+  // The last one, WILD, cannot be picked: it turns up when two colours
+  // breed together.
   SC.VARIETIES = [
     { id: 'cherry', name: 'CHERRY', B: '#d83a40', D: '#8f1f30', L: '#ff7d68' },
     { id: 'sunkist', name: 'SUNKIST', B: '#f08a2a', D: '#b3541c', L: '#ffc063' },
-    { id: 'yellow', name: 'YELLOW', B: '#f0d23c', D: '#b08c1e', L: '#fff29c' },
-    { id: 'jade', name: 'JADE', B: '#43a853', D: '#1f6b3c', L: '#93dc6c' },
-    { id: 'blue', name: 'BLUE DREAM', B: '#3565d6', D: '#1c3690', L: '#77adff' },
-    { id: 'snow', name: 'SNOWBALL', B: '#e8edf2', D: '#a5b4c4', L: '#ffffff' },
-    { id: 'black', name: 'BLACK ROSE', B: '#33313d', D: '#17161d', L: '#676478' },
+    { id: 'yellow', name: 'YELLOW', B: '#f0d23c', D: '#b08c1e', L: '#fff29c', M: '#fffbd6' }, // pale stripe down the back
+    { id: 'jade', name: 'JADE', B: '#43a853', D: '#1f6b3c', L: '#93dc6c', N: '#368f47' },
+    { id: 'blue', name: 'BLUE DREAM', B: '#3565d6', D: '#1c3690', L: '#77adff', N: '#2a50b8' }, // darker head
+    { id: 'snow', name: 'SNOWBALL', B: '#e8edf2', D: '#a5b4c4', L: '#ffffff', K: '#c3d0dd' },
+    { id: 'black', name: 'BLACK ROSE', B: '#33313d', D: '#17161d', L: '#676478', K: '#4c4a5c', M: '#5d5a70' }, // bands lighter, or they vanish
     { id: 'choc', name: 'CHOCOLATE', B: '#74432e', D: '#45251b', L: '#a56c49' },
-    { id: 'wild', name: 'WILD', B: '#a39a74', D: '#6f6749', L: '#d0c8a0' },
+    { id: 'wild', name: 'WILD', B: '#a39a74', D: '#6f6749', L: '#d0c8a0', M: '#5c5438' }, // see-through, with the gut showing as a dark line
   ];
   SC.WILD = 8;
 
